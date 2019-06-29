@@ -1,0 +1,55 @@
+# Build sample app
+stages:
+- build-frontend
+- build-slave
+- release-frontend
+- release-slave
+
+variables:
+  DOCKER_DRIVER: overlay
+  FRONTEND: ${CI_REGISTRY_FRONTEND}:$RELEASE
+  SLAVE: ${CI_REGISTRY_SLAVE}:$RELEASE
+
+##############
+# Build stages
+##############
+build-frontend:
+  before_script:
+   - docker info
+  script:
+  - docker build -t $FRONTEND php-redis
+  stage: build-frontend
+  tags:
+  - docker-runner
+
+build-slave:
+  before_script:
+   - docker info
+  script:
+  - docker build -t $SLAVE redis-slave
+  stage: build-slave
+  tags:
+  - docker-runner
+
+##############
+# Release stages
+##############
+release-frontend:
+   before_script:
+    - echo "$REG_PASSWORD" | docker login -u "$REG_USER" --password-stdin
+    - docker info
+   script:
+    - docker push $FRONTEND
+   stage: release-frontend
+   tags:
+    - docker-runner
+
+release-slave:
+  before_script:
+   - echo "$REG_PASSWORD" | docker login -u "$REG_USER" --password-stdin
+   - docker info
+  script:
+   - docker push $SLAVE
+  stage: release-slave
+  tags:
+   - docker-runner
